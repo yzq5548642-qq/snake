@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>贪吃蛇</title>
+    <style>
+        canvas{
+            border:1px solid gray;
+            background: pink;
+        }
+    </style>
+</head>
+<body>
+<div id="score">分数：0</div>
+<!--<div id="scorejilu">历史记录:</div>-->
+<canvas width="600px" height="600px" id="myCanvas">您的浏览器不支持canvas标签，请更新浏览器！</canvas>
+<!--<button class="start">重新开始</button>-->
+<button class="stop">暂停</button>
+<script>
+    //画板
+    var myCanvas = document.getElementById('myCanvas');
+    //画笔
+    var ctx = myCanvas.getContext('2d');
+    //分数
+    var scoreElem = document.getElementById('score');
+    var score = 0;
+    //var scorejilu = document.getElementById('scorejilu');
+    //开关
+    // var startElem = document.getElementsByClassName('start')[0];
+    var stopElem = document.getElementsByClassName('stop')[0];
+
+    //面向对象
+    function SnakePlay(canvasElem,ctx){
+        //构造函数
+        this.canvasElem = canvasElem;
+        this.ctx = ctx;
+        this.size = 20; // 每个小格子的宽和高一样都是size
+
+        var direction = 'right';
+
+        var width = this.canvasElem.width;
+        var height = this.canvasElem.height;
+
+        //食物坐标
+        var foodX = 0;
+        var foodY = 0;
+
+        //蛇
+        this.posArr = [
+            {x:0,y:1,color:'red'},
+            {x:1,y:1,color:'red'},
+            {x:2,y:1,color:'red'},
+            {x:3,y:1,color:'red'},
+            {x:4,y:1,color:'red'},
+            {x:5,y:1,color:'red'},
+            {x:6,y:1,color:'red'},
+            {x:7,y:1,color:'red'},
+            {x:8,y:1,color:'red'},
+            {x:9,y:1,color:'blue'},
+            {x:10,y:1,color:'yellow'},
+            {x:11,y:1,color:'black'},
+            {x:12,y:1,color:'#fff'}
+        ];
+
+        //画蛇
+        this.drawSnake = function(){
+
+            for(var i=0;i<this.posArr.length;i++){
+                ctx.beginPath();
+                ctx.fillStyle = this.posArr[i].color;
+                ctx.fillRect(this.posArr[i].x * this.size,this.posArr[i].y * this.size,this.size,this.size);
+            }
+        };
+
+        //擦除画布
+        this.clearCanvas = function(){
+            this.ctx.clearRect(0,0,width,height);
+        };
+
+        this.snakeMove = function(){
+            //蛇头在前
+            //蛇在移动的时候，除了头部的蛇节使用的都是它前面蛇节的坐标
+            var len = this.posArr.length;
+            for(var i=0;i<len -1;i++){
+                this.posArr[i].x = this.posArr[i+1].x;
+                this.posArr[i].y = this.posArr[i+1].y;
+            }
+
+            //处理蛇头 -- 和方向有关
+            if(direction == "right"){
+                this.posArr[len - 1].x = this.posArr[len - 1].x + 1;
+            }else if(direction == 'left'){
+                this.posArr[len - 1].x = this.posArr[len - 1].x - 1;
+            }else if(direction == 'up'){
+                this.posArr[len - 1].y = this.posArr[len - 1].y - 1;
+            }else if(direction == 'down'){
+                this.posArr[len - 1].y = this.posArr[len - 1].y + 1;
+            }
+
+            //判断蛇头是否撞墙
+            if (this.posArr[this.posArr.length-1].x == width/this.size || this.posArr[this.posArr.length-1].y == height/this.size || this.posArr[this.posArr.length-1].x == -1 || this.posArr[this.posArr.length-1].y == -1){
+                clearInterval(timer);
+                alert("你撞到墙壁了,你本局的分数是："+score);
+                //score = 0;
+                return;
+            }
+            
+            //判断蛇是否吃到自己
+            for (var i=0;i<len-1;i++){
+                if ((this.posArr[len - 1].x == this.posArr[i].x) && (this.posArr[len - 1].y == this.posArr[i].y)){
+                    clearInterval(timer);
+                    alert("你吃到了自己,你本局的分数是"+score);
+                    //score = 0;
+                    return;
+                }
+            }
+
+            //判断蛇头的坐标是否和foodX和foodY相等
+            //........增加蛇节 -- 在蛇尾增加蛇节，食物消失在重新绘制一个
+            //如果吃到 -- 蛇尾增加一节，使用的是postArr未改变之前的坐标
+            //修改 foodX foodY坐标
+            if (this.posArr[len-1].x == foodX && this.posArr[len-1].y == foodY){
+                this.snakeMove();
+                this.posArr.unshift({x:-1,y:-1,color:'orange'});
+                score += 1;
+                scoreElem.innerHTML = "分数：" + score;
+                //scorejilu.innerText = "历史记录:"+score;
+                //坐标
+                foodX = Math.floor(Math.random() * width/this.size);
+                foodY = Math.floor(Math.random() * height/this.size);
+
+            }
+            this.clearCanvas();
+            this.drawSnake();
+            this.drawFood();
+            //this.clearCanvas();
+        };
+
+        //画食物
+        this.drawFood = function(){
+            //将食物在画布上
+            ctx.beginPath();
+            ctx.fillRect(foodX*this.size,foodY*this.size,this.size,this.size);
+        }
+
+        this.play = function(){
+
+            this.drawSnake();
+
+            this.snakeMove();
+
+            //坐标
+            foodX = Math.floor(Math.random() * width/this.size);
+            foodY = Math.floor(Math.random() * height/this.size);
+
+            //定时器 --
+            // 清除画布
+            //画蛇所在的位置
+            //画食物
+            //碰到食物 -- 蛇头的坐标 == 食物的坐标
+            //  增加蛇节 -- 在蛇尾增加蛇节，食物消失在重新绘制一个
+
+            timer = setInterval(()=>{
+                this.snakeMove();
+            },200);
+
+
+            //按键监听
+            var num = 0;
+            var that = this;
+            document.body.onkeyup = function(e){
+                console.log(e.keyCode);
+                if(e.keyCode == 37){
+                    if (direction != 'right'){
+                        direction = 'left';
+                    }
+                }else if(e.keyCode == 38){
+                    if (direction != 'down'){
+                        direction = 'up';
+                    }
+                }else if(e.keyCode == 39){
+                    if (direction != 'left'){
+                        direction = 'right';
+                    }
+                }else if(e.keyCode == 40){
+                    if (direction != 'up'){
+                        direction = 'down';
+                    }
+                }
+                if (e.keyCode == 32){
+                    num += 1;
+                    console.log(num);
+                    if (num%2 != 0){
+                        clearInterval(timer);
+                    }else{
+                        timer = setInterval(()=>{
+                            that.snakeMove();
+                        },200);
+                    }
+                }
+                if (e.keyCode == 13){
+                    if (flag) {
+                        clearInterval(timer);
+                        flag = false;
+                        stopElem.innerText = '开始';
+                    }else{
+                        timer = setInterval(()=>{
+                            that.snakeMove();
+                        },200);
+                        flag = true;
+                        stopElem.innerText = '暂停';
+                    }
+                }
+            };
+            //鼠标监听
+            var flag = true;
+            stopElem.onclick = function (e) {
+                if (flag) {
+                    clearInterval(timer);
+                    flag = false;
+                    stopElem.innerText = '开始';
+                }else{
+                    timer = setInterval(()=>{
+                        that.snakeMove();
+                    },200);
+                    flag = true;
+                    stopElem.innerText = '暂停';
+                }
+            }
+            
+        }
+    }
+
+    var game = new SnakePlay(myCanvas,ctx);
+
+    game.play();
+
+</script>
+</body>
+</html>
